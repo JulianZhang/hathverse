@@ -1,28 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
-import qualified Data.Text as T
-import Web.Scotty as S
-import Text.Blaze.Html5 as H hiding (main)
-import qualified Text.Blaze.Html5.Attributes as A
-import Text.Blaze.Html.Renderer.Text
-
-index :: Html
-index = H.docTypeHtml $ do
-  H.head $ title "home"
-  H.body $
-    H.form ! A.method "post" ! A.action "/check" $ do
-      textarea ! A.name "solution" $
-        "main = putStrLn \"Hello world!\""
-      H.input ! A.type_ "submit" ! A.value "submit"
-
-check :: Bool -> Html
-check result = H.docTypeHtml $ do
-  H.head $ title "check"
-  H.body $ H.toHtml $ show result
+import System.Environment (lookupEnv)
+import Control.Monad.IO.Class (liftIO)
+import Web.Scotty
+import Network.Wai.Middleware.Static
+import Lucid
+import Db
+import Css
+import View
 
 main :: IO ()
-main = scotty 3000 $ do
-  get "/" $ S.html . renderHtml $ index
-  post "/check" $ do
-    solution <- S.param "solution"
-    let right_solution = "main = putStrLn \"Hello world!\"" :: T.Text
-    S.html . renderHtml . check $ solution == right_solution
+main = do
+  port <- maybe 3000 read <$> lookupEnv "PORT"
+
+  scotty port $ do
+
+    middleware $ staticPolicy $ addBase "static"
+
+    get "/css/default.css" $ do
+      addHeader "Content-Type" "text/css"
+      text defaultCss
+
+    get "/" $ do
+      idTitles <- liftIO allProblemIdTitles
+      html . renderText $ homepage idTitles
