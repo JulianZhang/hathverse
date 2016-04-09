@@ -1,9 +1,23 @@
 window.onload = function() {
-  var template = document.getElementById("code").innerHTML;
-  document.getElementById("code").innerHTML = "";
-  editor = CodeMirror(document.getElementById("code"), {
+  var codeblock = $("#code");
+  var template = codeblock.html();
+  codeblock.html("");
+  editor = CodeMirror($("#code")[0], {
     mode: "haskell",
     value: template,
     lineNumbers: true
   });
 }
+
+$("#run").click(function(){
+  if($("#run").hasClass("disabled")) return;
+  $("#run").addClass("disabled");
+  var pid = document.URL.substr(document.URL.lastIndexOf('/')+1);
+  pid = parseInt(pid);
+  var code = editor.getValue();
+  $.post("/check", JSON.stringify({"probId": pid, "solCode": code}),
+         function(data){
+           $("#result").html(data.result);
+           $("#run").removeClass("disabled");
+         }, "json");
+});
